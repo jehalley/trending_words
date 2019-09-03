@@ -83,6 +83,7 @@ def get_word_frequencies_by_date(file_list):
             tweets_word_counts = pd.concat([tweets_word_counts, word_counts_by_date], ignore_index=True, sort=True)
         else:
             tweets_word_counts = tweets_word_counts.groupby(['date', 'word']).sum().add(word_counts_by_date.groupby(['date', 'word']).sum(), fill_value=0).reset_index()
+    tweets_word_counts = tweets_word_counts.drop_duplicates(keep = 'first')
     #find total counts per date so count can be converted to frequency
     sum_of_counts_per_date = tweets_word_counts.groupby('date')['count']\
     .sum()\
@@ -96,11 +97,13 @@ def get_word_frequencies_by_date(file_list):
         
     
 def get_trending_words_dataframe(word_frequencies_by_date):
+    #determine date range twitter dump covers
     max_date = word_frequencies_by_date['date'].max()
     min_date = word_frequencies_by_date['date'].min()
+    #reshape df so that words are columns with the date they appear as other columns
     reshaped_df = word_frequencies_by_date.pivot(index='word', columns='date', values='word_frequency')
     reshaped_df['date_of_max_freq'] = reshaped_df.idxmax(axis=1)
-    trending_words_df = df2.loc[df2['Max'] == max_date].fillna(0)
+    trending_words_df = reshaped_df.loc[reshaped_df['date_of_max_freq'] == max_date].fillna(0)
     trending_words_df['frequency_change'] = trending_words_df[max_date] - trending_words_df[min_date]
     return trending_words_df
     
