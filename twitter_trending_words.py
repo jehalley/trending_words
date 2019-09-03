@@ -9,6 +9,8 @@ from datetime import datetime
 from nltk.corpus import stopwords
 import os
 import pandas as pd
+from pandas import Timestamp, Series, date_range
+import re
 import string
 
 #update nltk stopwords
@@ -60,7 +62,7 @@ def get_tweet_words_list(tweet):
             
                
 def get_word_frequencies_by_date(file_list):
-    tweets_word_frequencies = pd.DataFrame(columns=['date', 'word','word_frequency'])
+    tweets_word_counts = pd.DataFrame(columns=['date', 'word','count'])
     for file_path in file_list:
         df = pd.read_json(file_path, orient = 'records', lines = True)
         filtered_df = df.filter(['created_at','text'])
@@ -76,16 +78,19 @@ def get_word_frequencies_by_date(file_list):
             .to_frame()\
             .reset_index()
         word_counts_by_date.columns = ['date','word','count']
+        if len(tweets_word_counts.index) == 0:
+            tweets_word_counts = pd.concat([tweets_word_counts, word_counts_by_date], ignore_index=True, sort=True)
+        else:
+            tweets_word_counts = tweets_word_counts.groupby(['date', 'word']).sum().add(word_counts_by_date.groupby(['date', 'word']).sum(), fill_value=0).reset_index()
         #find total counts per date so count can be converted to frequency
-        sum_of_counts_per_date = word_counts_by_date.groupby('date')['count']\
-        .sum()\
-        .to_frame()\
-        .reset_index()
-        sum_of_counts_per_date.columns=['date','count_sum']
-        word_counts_by_date = pd.merge(word_counts_by_date,sum_of_counts_per_date,left_on=['date'], right_on = ['date'], how = 'left')
-        word_counts_by_date['word_frequency'] = word_counts_by_date['count']/word_counts_by_date['count_sum']
-        word_frequencies_by_date = word_counts_by_date[['date','word','word_frequency']]
-        tweets_word_frequencies = tweets_word_frequencies.groupby(['date', 'word']).sum().add(word_frequencies_by_date.groupby(['date', 'word']).sum(), fill_value=0).reset_index()
+    sum_of_counts_per_date = tweets_word_counts.groupby('date')['count']\
+    .sum()\
+    .to_frame()\
+    .reset_index()
+    sum_of_counts_per_date.columns=['date','count_sum']
+    tweets_word_counts = pd.merge(tweets_word_counts,sum_of_counts_per_date,left_on=['date'], right_on = ['date'], how = 'left')
+    tweets_word_counts['word_frequency'] = tweets_word_counts['count']/tweets_word_counts['count_sum']
+    tweets_word_frequencies = tweets_word_counts[['date','word','word_frequency']]
     return tweets_word_frequencies
         
     
@@ -103,5 +108,5 @@ allStopwords = make_stopwords_list()
 directory_path = '/Users/JeffHalley/Downloads/2018_copy'
 file_list = get_file_list(directory_path)      
 word_frequencies_by_date = get_word_frequencies_by_date(file_list)
-word_frequencies_by_date.to_csv('aggregate_tweets_df.csv')
+word_frequencies_by_date.to_csv('aggregate_and_frequency_once_tweets_df.csv')
 trending_words_df = get_trending_words_dataframe(word_frequencies_by_date)
