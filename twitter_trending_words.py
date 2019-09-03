@@ -50,7 +50,7 @@ def get_file_list(directory_path):
                 file_list.append(os.path.join(root, file))
     return file_list
 
-#function to split a tweet into list of words without tags, urls, stopwords or punctuation
+#fsplit a tweet into list of words without tags, urls, stopwords or punctuation
 def get_tweet_words_list(tweet):
     tweet_string = str(tweet).lower().split()
     filtered_tweet_string = [word for word in tweet_string if word not in allStopwords]
@@ -63,6 +63,7 @@ def get_tweet_words_list(tweet):
                
 def get_word_frequencies_by_date(file_list):
     tweets_word_counts = pd.DataFrame(columns=['date', 'word','count'])
+    #get word counts by date for each json file
     for file_path in file_list:
         df = pd.read_json(file_path, orient = 'records', lines = True)
         filtered_df = df.filter(['created_at','text'])
@@ -82,7 +83,7 @@ def get_word_frequencies_by_date(file_list):
             tweets_word_counts = pd.concat([tweets_word_counts, word_counts_by_date], ignore_index=True, sort=True)
         else:
             tweets_word_counts = tweets_word_counts.groupby(['date', 'word']).sum().add(word_counts_by_date.groupby(['date', 'word']).sum(), fill_value=0).reset_index()
-        #find total counts per date so count can be converted to frequency
+    #find total counts per date so count can be converted to frequency
     sum_of_counts_per_date = tweets_word_counts.groupby('date')['count']\
     .sum()\
     .to_frame()\
