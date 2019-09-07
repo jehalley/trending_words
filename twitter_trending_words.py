@@ -41,10 +41,11 @@ def make_stopwords_list():
 
 #get list of all twitter archive files
 def get_file_list(directory_path):
+    extensions = ('.bz2','.json')
     file_list = []
     for root, dirs, files in os.walk(directory_path):
         for file in files:
-            if file.endswith('.bz2'):
+            if file.endswith(extensions):
                 file_list.append(os.path.join(root, file))
     return file_list
 
