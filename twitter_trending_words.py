@@ -60,7 +60,7 @@ def get_words_list(comment):
 
 def get_reddit_dataframes(reddit_file_list):
     reddit_df = pd.DataFrame(columns=['date', 'date_hour','words'])
-    for file_path in file_list:
+    for file_path in reddit_file_list:
         df = pd.read_json(file_path, orient = 'records', lines = True)
         filtered_df = df.filter(['created_utc','body'])
         filtered_df['date_hour'] = [datetime.strptime(datetime.utcfromtimestamp(d).strftime('%Y-%m-%d %H:%M:%S'),'%Y-%m-%d %H:%M:%S' ) for d in filtered_df['created_utc']]
@@ -184,8 +184,14 @@ def get_twitter_word_frequencies_by_hour(twitter_file_list):
     tweets_word_counts['word_frequency'] = tweets_word_counts['count']/tweets_word_counts['count_sum']
     tweets_word_frequencies = tweets_word_counts[['date_hour','word','word_frequency']]
     return tweets_word_frequencies  
-           
+
+def get_joint_reddit_and_twitter_freqs(trending_word_frequencies_by_hour, twitter_word_frequencies_by_hour):
+    joint_reddit_and_twitter_freqs = trending_word_frequencies_by_hour.merge(twitter_word_frequencies_by_hour, how = 'inner', on = ['date_hour', 'word'])
+    #change column names for frequencies
+    return joint_reddit_and_twitter_freqs 
+      
 allStopwords = make_stopwords_list()
+
 reddit_directory_path = '/Users/JeffHalley/Downloads/RC_2018-07_test'
 reddit_file_list = get_file_list(reddit_directory_path)
 reddit_df = get_reddit_dataframes(reddit_file_list)
@@ -195,15 +201,9 @@ trending_words_df.to_csv('reddit_trending_words.csv')
 trending_word_frequencies_by_hour = get_trending_word_frequencies_by_hour(reddit_df)
 trending_word_frequencies_by_hour.to_csv('reddit_trending_words_freqs_by_hour.csv')
 
-
 twitter_directory_path = '/Users/JeffHalley/Downloads/2018_copy'
 twitter_file_list = get_file_list(twitter_directory_path)
 twitter_word_frequencies_by_hour = get_twitter_word_frequencies_by_hour(twitter_file_list)      
 
+joint_reddit_and_twitter_freqs= get_joint_reddit_and_twitter_freqs(trending_word_frequencies_by_hour, twitter_word_frequencies_by_hour)
 
-tweets_df = get_tweet_dataframes(file_list)
-trending_words_df = get_trending_words_df(tweets_df)
-trending_word_frequencies_by_hour = get_trending_word_frequencies_by_hour(tweets_df)
-reddit_directory_path = '/Users/JeffHalley/Downloads/RC_2018-07_test'
-reddit_file_list = get_file_list(reddit_directory_path)
-reddit_word_frequencies_by_hour = get_reddit_word_frequencies_by_hour(reddit_file_list)
